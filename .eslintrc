@@ -18,12 +18,6 @@
         "playwright/prefer-to-have-length": "warn",
         "playwright/prefer-strict-equal": "warn",
         "playwright/max-nested-describe": ["warn", { "max": 1 }],
-        "playwright/no-restricted-matchers": [
-            "error",
-            {
-                "toBeFalsy": "Use `toBe(false)` instead.",
-                "not": null
-            }
-        ]
+        "playwright/no-restricted-matchers": ["error"]
     }
 }

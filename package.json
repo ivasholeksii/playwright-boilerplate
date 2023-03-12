@@ -3,10 +3,10 @@
     "version": "1.0.0",
     "main": "index.js",
     "repository": "https://github.com/ivasholeksii/playwright-boilerplate.git",
-    "author": "Oleksii Ivashchenko <oleksii.ivashchenko@gmail.com>",
+    "author": "Oleksii Ivashchenko <oleksii.ivashchenko[at]gmail.com>",
     "license": "MIT",
     "devDependencies": {
-        "@playwright/test": "^1.29.2",
+        "@playwright/test": "^1.31",
         "@typescript-eslint/eslint-plugin": "^5.48.2",
         "@typescript-eslint/parser": "^5.48.2",
         "eslint": "^8.32.0",
@@ -18,9 +18,9 @@
     },
     "scripts": {
         "test": "npx playwright test",
+        "test-ci": "HOME=/root npx playwright test",
         "lint": "eslint .",
-        "prettier-check": "npx prettier --check",
-        "prettier-wtite": "npx prettier --write",
+        "lint-fix": "eslint . --fix",
         "prepare": "husky install"
     },
     "lint-staged": {
