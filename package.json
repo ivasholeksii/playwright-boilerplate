@@ -18,6 +18,7 @@
     },
     "scripts": {
         "test": "npx playwright test",
+        "test-ci": "HOME=/root npx playwright test",
         "lint": "eslint .",
         "lint-fix": "eslint . --fix",
         "prepare": "husky install"
