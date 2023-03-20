@@ -17,7 +17,7 @@
         "playwright/prefer-to-be": "warn",
         "playwright/prefer-to-have-length": "warn",
         "playwright/prefer-strict-equal": "warn",
-        "playwright/max-nested-describe": ["warn", { "max": 1 }],
+        "playwright/max-nested-describe": ["warn", { "max": 2 }],
         "playwright/no-restricted-matchers": ["error"]
     }
 }
