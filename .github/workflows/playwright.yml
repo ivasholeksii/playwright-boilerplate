@@ -7,15 +7,17 @@ on:
         branches: [main, master]
 jobs:
     playwright:
+        timeout-minutes: 20
         name: 'Playwright Tests'
         runs-on: ubuntu-latest
-        container: mcr.microsoft.com/playwright:v1.31.0-focal
         steps:
-            - uses: actions/checkout@v3
-            - uses: actions/setup-node@v3
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
               with:
-                  node-version: '18'
+                  node-version: lts/*
             - name: Install dependencies
               run: yarn install --frozen-lockfile
-            - name: Run your tests
-              run: yarn test:ci
+            - name: Install Playwright Browsers
+              run: npx playwright install --with-deps
+            - name: Run Playwright tests
+              run: npx playwright test
