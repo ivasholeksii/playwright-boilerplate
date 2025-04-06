@@ -1,9 +1,9 @@
 import { BasePage } from './base.page';
 
 export class LoginPage extends BasePage {
-    private readonly usernameInput = this.page.locator('#user-name');
-    private readonly passwordInput = this.page.locator('#password');
-    private readonly loginButton = this.page.locator('#login-button');
+    private readonly usernameInput = this.page.getByTestId('username');
+    private readonly passwordInput = this.page.getByTestId('password');
+    private readonly loginButton = this.page.getByTestId('login-button');
     private readonly errorMessageContainer = this.page.locator(
         '.error-message-container'
     );
