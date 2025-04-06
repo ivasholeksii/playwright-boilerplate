@@ -35,31 +35,39 @@ const config: PlaywrightTestConfig = {
 
         /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
         trace: 'retain-on-failure',
+        testIdAttribute: 'data-test',
         baseURL: BASE_URL,
         headless: true,
     },
 
     /* Configure projects for major browsers */
     projects: [
+        { name: 'setup', testMatch: /.*\.setup\.ts/ },
         {
             name: 'chromium',
             use: {
                 ...devices['Desktop Chrome'],
+                storageState: 'playwright/.auth/standard-user.json',
             },
+            dependencies: ['setup'],
         },
 
         {
             name: 'firefox',
             use: {
                 ...devices['Desktop Firefox'],
+                storageState: 'playwright/.auth/standard-user.json',
             },
+            dependencies: ['setup'],
         },
 
         {
             name: 'webkit',
             use: {
                 ...devices['Desktop Safari'],
+                storageState: 'playwright/.auth/standard-user.json',
             },
+            dependencies: ['setup'],
         },
 
         /* Test against mobile viewports. */

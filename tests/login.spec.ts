@@ -3,6 +3,8 @@ import { BASE_URL, PASS, STANDARD_USER } from '../constants';
 import { InventoryPage } from '../lib/pages/inventory.page';
 import { LoginPage } from '../lib/pages/login.page';
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test.describe('login Page tests', () => {
     let loginPage: LoginPage;
 
