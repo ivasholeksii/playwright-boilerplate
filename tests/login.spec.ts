@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { BASE_URL, PASS, STANDARD_USER } from '../constants';
+import { BASE_URL, getUserPass, STANDARD_USER } from '../constants';
 import { InventoryPage } from '../lib/pages/inventory.page';
 import { LoginPage } from '../lib/pages/login.page';
 
@@ -14,7 +14,7 @@ test.describe('login Page tests', () => {
     });
 
     test('user is redirected to the inventory page after successful login', async () => {
-        await loginPage.login(STANDARD_USER, PASS);
+        await loginPage.login(STANDARD_USER, getUserPass());
         const inventoryPage = new InventoryPage(loginPage.page);
         await expect(await inventoryPage.page.title()).toBe('Swag Labs');
     });

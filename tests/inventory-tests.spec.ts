@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { InventoryPage } from '../lib/pages/inventory.page';
 
-test.describe('Inventory Page tests', () => {
+test.describe('inventory Page tests', () => {
     test.beforeEach(async ({ page }) => {
         const inventoryPage = new InventoryPage(page);
         await inventoryPage.navigate();
