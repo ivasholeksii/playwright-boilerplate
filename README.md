@@ -14,6 +14,12 @@ Then, install the dependencies:
 yarn
 ```
 
+### Setup in Github
+
+This project requires github secret to be configure.
+
+Set up USER_PASS variable (see default value in the `.env.example` file) in the `/settings/secrets/actions` of your repository.
+
 ## Usage
 
 To run the sample tests in all three browsers (Chromium, Firefox, and Webkit), use the following command:
