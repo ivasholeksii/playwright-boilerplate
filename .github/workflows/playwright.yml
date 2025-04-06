@@ -1,15 +1,20 @@
 name: Playwright Tests
+
 on:
     workflow_dispatch:
     push:
         branches: [main, master]
     pull_request:
         branches: [main, master]
+
 jobs:
     playwright:
         timeout-minutes: 20
-        name: 'Playwright Tests'
+        name: Playwright Tests (Shard ${{ matrix.shard }})
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                shard: [1/2, 2/2]
         steps:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
@@ -19,5 +24,5 @@ jobs:
               run: yarn install --frozen-lockfile
             - name: Install Playwright Browsers
               run: npx playwright install --with-deps
-            - name: Run Playwright tests
-              run: npx playwright test
+            - name: Run Playwright tests in shard ${{ matrix.shard }}
+              run: npx playwright test --shard=${{ matrix.shard }}
