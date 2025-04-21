@@ -28,3 +28,5 @@ jobs:
               run: npx playwright install --with-deps
             - name: Run Playwright tests in shard ${{ matrix.shard }}
               run: npx playwright test --shard=${{ matrix.shard }}
+            - name: Run Playwright API tests
+              run: yarn test:api
