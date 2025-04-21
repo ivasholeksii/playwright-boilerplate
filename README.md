@@ -50,6 +50,18 @@ This project includes Git hooks using husky. When you commit changes, husky will
 
 This project is set up for Github Actions to run tests in a container. The Github Actions workflow is defined in the `.github/workflows/playwright.yml` file. The workflow will run the tests in browsers defined in `playwright.config.ts`.
 
+## API tests
+
+For API tests free API used: [https://jsonplaceholder.typicode.com/](https://jsonplaceholder.typicode.com/)
+
+### Run api test
+
+To run API tests use command: `yarn test:api`
+
+### Configuration
+
+Configuration for API tests is located in the `playwright.api.config.ts`
+
 ## License
 
 This project is licensed under the MIT license. See the `LICENSE` file for details.
