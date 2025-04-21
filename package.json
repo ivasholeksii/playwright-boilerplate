@@ -19,7 +19,8 @@
     },
     "scripts": {
         "test": "npx playwright test",
-        "test:ui": "npx playwright test --ui",
+        "test:ui": "npx playwright test --ui -c playwright.config.ts",
+        "test:api": "npx playwright test -c playwright.api.config.ts",
         "test:ci": "HOME=/root npx playwright test",
         "lint": "eslint .",
         "lint-fix": "eslint . --fix",
