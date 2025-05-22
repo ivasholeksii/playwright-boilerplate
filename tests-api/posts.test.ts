@@ -20,10 +20,22 @@ test.describe('Posts endpoint tests', () => {
             userId: 1,
         };
 
-        const response = await request.post(`${url}`);
+        const response = await request.post(`${url}`, { data: post }); // Added post data to the request
         expect(response.status()).toBe(201);
         const postResponse = await response.json();
         expect(postResponse.id).toBeTruthy();
-        expect(postResponse.id).toBeGreaterThan(0);
+        // The API doesn't actually use the input post data to create the new ID,
+        // so we can't check postResponse.title === post.title etc.
+        // It typically returns an ID like 101 if there are 100 posts.
+        expect(postResponse.id).toBeGreaterThan(0); 
+    });
+
+    test('GET /posts/# should return 404 for non-existent post', async ({
+        request,
+    }) => {
+        // This test verifies the API's error handling for requests to non-existent resources.
+        // It attempts to GET a post with an ID (e.g., 0 or 99999) that is unlikely to exist.
+        const response = await request.get(`${url}/0`); // Using 0 as a non-existent ID
+        expect(response.status()).toBe(404); // Expecting a 404 Not Found status code.
     });
 });

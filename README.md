@@ -18,7 +18,7 @@ yarn
 
 This project requires github secret to be configure.
 
-Set up USER_PASS variable (see default value in the `.env.example` file) in the `/settings/secrets/actions` of your repository.
+Set up USER_PASS variable (see default value in the `.env.example` file) in the `/settings/secrets/actions` of your repository. This secret stores the credentials (username and password, typically colon-separated or in a specific format expected by the login process) for the standard user account used during UI test execution.
 
 ## Usage
 
@@ -27,6 +27,16 @@ To run the sample tests in all three browsers (Chromium, Firefox, and Webkit), u
 ```bash
 yarn test
 ```
+
+## Project Structure
+
+*   `lib/`: For core library code, page objects, and components.
+*   `lib/pages/`: Contains Page Object Model classes for different pages of the application.
+*   `lib/components/`: Contains reusable UI component abstractions.
+*   `tests/`: Contains UI end-to-end tests written with Playwright.
+*   `tests-api/`: Contains API tests.
+*   `tests-examples/`: Contains example tests provided by Playwright.
+*   `.github/workflows/`: Contains CI/CD workflow configurations (e.g., GitHub Actions).
 
 ## Linting and Formatting
 
