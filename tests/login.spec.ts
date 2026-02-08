@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { BASE_URL, getUserPass, STANDARD_USER } from '../constants';
+import {
+    BASE_URL,
+    getUserPass,
+    LOCKED_OUT_USER,
+    STANDARD_USER,
+} from '../constants';
 import { InventoryPage } from '../lib/pages/inventory.page';
 import { LoginPage } from '../lib/pages/login.page';
 
@@ -62,5 +67,19 @@ test.describe('login Page tests', () => {
                 );
             });
         });
+    });
+
+    test('locked out user cannot login and sees locked out error', async () => {
+        await loginPage.login(LOCKED_OUT_USER, getUserPass());
+        await expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+        const errorText = await loginPage.getErrorMessageText();
+        expect(errorText.toLowerCase()).toContain('locked out');
+    });
+
+    test('user can submit login with Enter key', async () => {
+        await loginPage.enterUsername(STANDARD_USER);
+        await loginPage.enterPassword(getUserPass());
+        await loginPage.submitWithEnter();
+        await expect(loginPage.page).toHaveURL(/inventory\.html/);
     });
 });
