@@ -28,6 +28,32 @@ To run the sample tests in all three browsers (Chromium, Firefox, and Webkit), u
 yarn test
 ```
 
+## AI-Assisted Test Authoring (Skill)
+
+This repo includes a skill to help modern AI coding tools generate Playwright tests that follow local conventions.
+
+**Skill location:** `skills/playwright-test-authoring/`
+
+What the skill encodes:
+
+- Where UI and API specs live
+- Page object and component patterns
+- Auth setup and storage state usage
+- Selector and test ID conventions
+- Test templates and best practices
+
+### How to use it with AI coding tools
+
+1. Open the repo in your AI tool (Codex Desktop, ChatGPT with repo access, Cursor, Windsurf, VS Code Copilot Chat, etc.).
+2. Point the tool to `skills/playwright-test-authoring/SKILL.md` and the references in `skills/playwright-test-authoring/references/`.
+3. Ask it to create tests using the existing patterns.
+
+### Example prompts
+
+- `Use the Playwright test authoring skill in this repo and add a login test for locked-out users.`
+- `Create a new API spec under tests-api/ for the /posts endpoint, following repo patterns.`
+- `Add page object methods in lib/pages to support a new inventory test.`
+
 ## Linting and Formatting
 
 This project uses eslint and prettier for linting and formatting. To run linting and formatting checks, use the following command:
