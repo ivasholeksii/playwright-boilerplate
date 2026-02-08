@@ -80,6 +80,6 @@ test.describe('login Page tests', () => {
         await loginPage.enterUsername(STANDARD_USER);
         await loginPage.enterPassword(getUserPass());
         await loginPage.submitWithEnter();
-        await expect(loginPage.page).toHaveURL(/inventory\\.html/);
+        await expect(loginPage.page).toHaveURL(/inventory\.html/);
     });
 });
