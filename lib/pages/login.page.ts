@@ -20,6 +20,10 @@ export class LoginPage extends BasePage {
         await this.loginButton.click();
     }
 
+    async submitWithEnter(): Promise<void> {
+        await this.passwordInput.press('Enter');
+    }
+
     async login(username: string, password: string): Promise<void> {
         await this.enterUsername(username);
         await this.enterPassword(password);
@@ -28,5 +32,11 @@ export class LoginPage extends BasePage {
 
     isErrorMessageDisplayed(): Promise<boolean> {
         return this.errorMessageContainer.isVisible();
+    }
+
+    async getErrorMessageText(): Promise<string> {
+        const text = await this.errorMessageContainer.textContent();
+        if (!text) throw new Error('Error message text not found');
+        return text.trim();
     }
 }
