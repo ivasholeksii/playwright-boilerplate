@@ -14,6 +14,8 @@ Then, install the dependencies:
 yarn
 ```
 
+TEST
+
 ### Setup in Github
 
 This project requires github secret to be configure.
