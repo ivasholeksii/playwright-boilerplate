@@ -1,9 +1,9 @@
 ---
-name: playwright-test-authoring
+name: playwright-test-writing
 description: Create or update Playwright UI and API tests in this repo. Use when asked to add test coverage, new specs, page objects, API request tests, or to follow local conventions for test directories, auth setup, selectors, and constants.
 ---
 
-# Playwright Test Authoring
+# Playwright Test Writing
 
 ## Quick Start
 

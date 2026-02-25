@@ -1,4 +1,4 @@
 interface:
-    display_name: 'Playwright Test Authoring'
+    display_name: 'Playwright Test writing'
     short_description: 'Create repo-aligned Playwright UI/API tests'
     default_prompt: 'Create or update Playwright tests in this repo, following local page objects, configs, and selector conventions.'
