@@ -21,7 +21,9 @@
         "test": "npx playwright test",
         "test:ui": "npx playwright test --ui -c playwright.config.ts",
         "test:api": "npx playwright test -c playwright.api.config.ts",
-        "test:ci": "HOME=/root npx playwright test",
+        "test:staging": "ENVIRONMENT=staging npx playwright test",
+        "test:api:staging": "ENVIRONMENT=staging npx playwright test -c playwright.api.config.ts",
+        "test:ci": "HOME=/root ENVIRONMENT=production npx playwright test",
         "lint": "eslint .",
         "lint-fix": "eslint . --fix",
         "prepare": "husky install"

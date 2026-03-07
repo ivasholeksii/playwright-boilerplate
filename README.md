@@ -30,9 +30,9 @@ yarn test
 
 ## AI-Assisted Test Authoring (Skill)
 
-This repo includes a skill to help modern AI coding tools generate Playwright tests that follow local conventions.
+This repo includes guidance for a skill to help modern AI coding tools generate Playwright tests that follow local conventions.
 
-**Skill location:** `skills/playwright-test-authoring/`
+**Skill location (global Codex skills):** `/.codex/skills/playwright-test-authoring/SKILL.md`
 
 What the skill encodes:
 
@@ -45,7 +45,7 @@ What the skill encodes:
 ### How to use it with AI coding tools
 
 1. Open the repo in your AI tool (Codex Desktop, ChatGPT with repo access, Cursor, Windsurf, VS Code Copilot Chat, etc.).
-2. Point the tool to `skills/playwright-test-authoring/SKILL.md` and the references in `skills/playwright-test-authoring/references/`.
+2. Point the tool to `/.codex/skills/playwright-test-authoring/SKILL.md` and its references directory.
 3. Ask it to create tests using the existing patterns.
 
 ### Example prompts
