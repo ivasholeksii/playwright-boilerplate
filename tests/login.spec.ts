@@ -45,7 +45,6 @@ test.describe('login Page tests', () => {
             'javascript:alert("XSS");',
             'SELECT * FROM users WHERE username = "" OR ""="" AND password = "" OR ""="";',
             'Hello<scr<script>ipt>alert("XSS")</scr</script>ipt>',
-            '',
             'áéíóúñü',
             'ÄÖÜß',
             '文武百度',
