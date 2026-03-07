@@ -9,8 +9,8 @@ const environments: Record<
         apiBaseURL: 'http://localhost:3001',
     },
     staging: {
-        uiBaseURL: 'https://staging.myapp.com', // e.g. https://www.saucedemo.com
-        apiBaseURL: 'https://api.staging.myapp.com', // e.g. https://jsonplaceholder.typicode.com
+        uiBaseURL: 'https://www.saucedemo.com',
+        apiBaseURL: 'https://jsonplaceholder.typicode.com',
     },
     production: {
         uiBaseURL: 'https://www.myapp.com', // e.g. https://www.saucedemo.com

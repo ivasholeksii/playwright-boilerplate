@@ -28,12 +28,14 @@ jobs:
                           - constants-api-tests.ts
                           - playwright.api.config.ts
                           - constants.ts
+                          - config/environments.ts
                           - .github/workflows/playwright.yml
                       e2e:
                           - tests/**
                           - lib/**
                           - playwright.config.ts
                           - constants.ts
+                          - config/environments.ts
                           - .github/workflows/playwright.yml
                       tests_any:
                           - tests-api/**
@@ -43,6 +45,7 @@ jobs:
                           - lib/**
                           - playwright.config.ts
                           - constants.ts
+                          - config/environments.ts
                           - .github/workflows/playwright.yml
 
     playwright:
@@ -56,6 +59,7 @@ jobs:
                 shard: [1/2, 2/2]
         env:
             USER_PASS: ${{ secrets.USER_PASS }}
+            ENVIRONMENT: staging
         steps:
             - &checkout
               uses: actions/checkout@v4
@@ -78,6 +82,8 @@ jobs:
         runs-on: ubuntu-latest
         needs: changes
         if: ${{ github.event_name == 'workflow_dispatch' || needs.changes.outputs.api == 'true' }}
+        env:
+            ENVIRONMENT: staging
         steps:
             - *checkout
             - *setup-node
