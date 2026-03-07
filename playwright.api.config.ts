@@ -1,5 +1,7 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
-import { BASE_URL } from './constants';
+import { getEnvironmentConfig } from './config/environments';
+
+const { apiBaseURL } = getEnvironmentConfig();
 
 const config: PlaywrightTestConfig = {
     testDir: './tests-api',
@@ -15,7 +17,7 @@ const config: PlaywrightTestConfig = {
     use: {
         actionTimeout: 0,
         trace: 'retain-on-failure',
-        baseURL: BASE_URL,
+        baseURL: apiBaseURL,
         headless: true,
     },
 };

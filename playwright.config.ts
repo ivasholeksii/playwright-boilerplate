@@ -1,6 +1,8 @@
 import type { PlaywrightTestConfig } from '@playwright/test';
 import { devices } from '@playwright/test';
-import { BASE_URL } from './constants';
+import { getEnvironmentConfig } from './config/environments';
+
+const { uiBaseURL } = getEnvironmentConfig();
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -31,12 +33,10 @@ const config: PlaywrightTestConfig = {
         /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
         actionTimeout: 0,
         /* Base URL to use in actions like `await page.goto('/')`. */
-        // baseURL: 'http://localhost:3000',
-
         /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
         trace: 'retain-on-failure',
         testIdAttribute: 'data-test',
-        baseURL: BASE_URL,
+        baseURL: uiBaseURL,
         headless: true,
     },
 
