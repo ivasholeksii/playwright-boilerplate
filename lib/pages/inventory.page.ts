@@ -11,10 +11,18 @@ export class InventoryPage extends BasePage {
         super(page);
     }
 
+    /**
+     * Navigates to the inventory page (`/inventory.html`).
+     * Requires authenticated storage state — ensure the auth setup project has run.
+     */
     async navigate(): Promise<void> {
         await super.navigate(this.url);
     }
 
+    /**
+     * Returns a component wrapper for the product card matching the given name.
+     * @throws {Error} if no product with that name is found in the current DOM.
+     */
     async getProductByName(
         productName: string
     ): Promise<InventoryProductComponent> {

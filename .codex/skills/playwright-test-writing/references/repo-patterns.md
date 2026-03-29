@@ -5,8 +5,12 @@
 - UI specs: `tests/*.spec.ts`
 - API specs: `tests-api/*.test.ts`
 - Example specs: `tests-examples/` (reference only)
-- Page objects: `lib/pages/*.page.ts`
-- Components: `lib/components/*.component.ts`
+- Page objects: `lib/pages/*.page.ts` (exported from `lib/pages/index.ts`)
+- Components: `lib/components/*.component.ts` (exported from `lib/components/index.ts`)
+- All pages + components: `lib/index.ts`
+- Fixtures: `lib/fixtures.ts` (import `test` and `expect` from here for UI specs)
+- Shared types: `lib/types/api.types.ts` (exported from `lib/types/index.ts`)
+- Shared helpers: `lib/utils/*.ts`
 - UI constants: `constants.ts`
 - API constants: `constants-api-tests.ts`
 - Auth setup: `tests/auth.setup.ts`
@@ -17,6 +21,7 @@
 
 - `testIdAttribute` is set to `data-test` in `playwright.config.ts`.
 - Prefer `page.getByTestId('...')`, `locator.getByTestId('...')`, and role/label queries.
+- Never use CSS class selectors — they are not stable and not the convention.
 
 ## Auth and Storage State
 
@@ -30,11 +35,28 @@
 - Keep locators `private readonly` and provide small action methods.
 - Example files: `lib/pages/login.page.ts`, `lib/pages/inventory.page.ts`.
 
+## Component Pattern
+
+- Components wrap a `Locator` (not a `Page`).
+- Instantiated from page object methods that return sub-sections of a page (e.g. `InventoryPage.getProductByName()`).
+- Example file: `lib/components/inventory-product.component.ts`.
+
 ## API Test Pattern
 
 - Use the `request` fixture from `@playwright/test`.
 - Use `BASE_URL` from `constants-api-tests.ts` for full URLs.
-- Define shared types in `tests-api/types/types.ts`.
+- Define shared types in `lib/types/api.types.ts`.
+
+## Error Handling Contract
+
+- Page object and component methods that return text or components **throw `Error`** if the element is not found or has no text content.
+- Never return `null` or `undefined` from page object methods.
+- Example: `if (!text) throw new Error('Price text not found');`
+
+## Accessing the Raw Page
+
+- `BasePage.page` is `public` and can be accessed in tests: `loginPage.page`.
+- Prefer page object methods when they exist; fall back to `loginPage.page` for assertions not covered by the page object (e.g. `await expect(loginPage.page).toHaveURL(...)`).
 
 ## Concurrency and Stability
 

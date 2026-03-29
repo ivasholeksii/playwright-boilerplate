@@ -1,24 +1,19 @@
 # Templates
 
-## UI Spec Skeleton
+## UI Spec Skeleton (Fixtures-based — preferred)
 
 ```ts
-import { test, expect } from '@playwright/test';
-import { BASE_URL } from '../constants';
-import { SomePage } from '../lib/pages/some.page';
+import { test, expect } from '../lib/fixtures';
 
 test.describe('feature name', () => {
-    let somePage: SomePage;
-
-    test.beforeEach(async ({ page }) => {
-        somePage = new SomePage(page);
-        await somePage.navigate(BASE_URL);
+    test.beforeEach(async ({ inventoryPage }) => {
+        await inventoryPage.navigate();
     });
 
-    test('should do something', async () => {
+    test('should do something', async ({ inventoryPage }) => {
         // actions
         // assertions
-        await expect(somePage.page).toHaveTitle('Swag Labs');
+        await expect(inventoryPage.page).toHaveTitle('Swag Labs');
     });
 });
 ```
@@ -26,25 +21,41 @@ test.describe('feature name', () => {
 ## UI Spec Skeleton (Unauthenticated)
 
 ```ts
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../lib/fixtures';
 import { BASE_URL } from '../constants';
-import { LoginPage } from '../lib/pages/login.page';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe('login', () => {
-    let loginPage: LoginPage;
-
-    test.beforeEach(async ({ page }) => {
-        loginPage = new LoginPage(page);
+    test.beforeEach(async ({ loginPage }) => {
         await loginPage.navigate(BASE_URL);
     });
 
-    test('shows error for invalid credentials', async () => {
+    test('shows error for invalid credentials', async ({ loginPage }) => {
         await loginPage.enterUsername('wrong@example.com');
         await loginPage.enterPassword('wrongpassword');
         await loginPage.clickLoginButton();
         await expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+    });
+});
+```
+
+## Component Usage in a Test
+
+```ts
+import { test, expect } from '../lib/fixtures';
+
+test.describe('product list', () => {
+    test.beforeEach(async ({ inventoryPage }) => {
+        await inventoryPage.navigate();
+    });
+
+    test('backpack price is a positive number', async ({ inventoryPage }) => {
+        const backpack = await inventoryPage.getProductByName(
+            'Sauce Labs Backpack'
+        );
+        const price = await backpack.getProductPrice();
+        expect(price).toBeGreaterThan(0);
     });
 });
 ```
@@ -81,6 +92,7 @@ export class SomePage extends BasePage {
         super(page);
     }
 
+    /** Navigates to `/some-path`. Requires authenticated storage state. */
     async navigate(): Promise<void> {
         await super.navigate(this.url);
     }
@@ -89,6 +101,12 @@ export class SomePage extends BasePage {
         await this.actionButton.click();
     }
 }
+```
+
+After creating a page object, add it to `lib/pages/index.ts`:
+
+```ts
+export { SomePage } from './some.page';
 ```
 
 ## Component Skeleton
@@ -103,6 +121,10 @@ export class SomeComponent {
         this.container = container;
     }
 
+    /**
+     * Returns the label text.
+     * @throws {Error} if the label element has no text content.
+     */
     async getLabelText(): Promise<string> {
         const text = await this.container.getByTestId('label').textContent();
         if (!text) throw new Error('Label text not found');
@@ -110,3 +132,33 @@ export class SomeComponent {
     }
 }
 ```
+
+After creating a component, add it to `lib/components/index.ts`:
+
+```ts
+export { SomeComponent } from './some.component';
+```
+
+## Auth Setup Skeleton (for adding a new user role)
+
+```ts
+import { test as setup } from '@playwright/test';
+import { BASE_URL, SOME_USER, getUserPass } from '../constants';
+import { LoginPage } from '../lib/pages/login.page';
+import { InventoryPage } from '../lib/pages/inventory.page';
+
+const authFile = 'playwright/.auth/some-user.json';
+
+setup('authenticate as some user', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.navigate(BASE_URL);
+    await loginPage.login(SOME_USER, getUserPass());
+
+    const inventoryPage = new InventoryPage(page);
+    await inventoryPage.navigate();
+
+    await page.context().storageState({ path: authFile });
+});
+```
+
+Then add a new project entry in `playwright.config.ts` that depends on this setup and passes `storageState: authFile`.

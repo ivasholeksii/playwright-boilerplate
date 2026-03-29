@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { BASE_URL } from '../constants-api-tests';
-import { Post } from './types/types';
+import { Post } from '../lib/types';
 
 test.describe('Posts endpoint tests', () => {
     const url = `${BASE_URL}/posts`;
