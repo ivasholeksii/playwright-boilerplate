@@ -34,13 +34,44 @@ description: Create or update Playwright UI and API tests in this repo. Use when
 - Extend `BasePage` and expose small, composable methods.
 - Keep locators private and stable.
 - Add reusable UI pieces as components in `lib/components`.
+- After adding, export from the corresponding barrel file (`lib/pages/index.ts` or `lib/components/index.ts`).
+
+## Anti-Patterns (never do these)
+
+- Do not use CSS class selectors like `locator('.some-class')` — use `getByTestId()` only.
+- Do not use `page.waitForTimeout()` — use auto-waiting Playwright assertions.
+- Do not import `test`/`expect` from `@playwright/test` in UI spec files — import from `lib/fixtures.ts`.
+- Do not leave `test.only` in committed code.
+- Do not put constants inline in test files — add them to `constants.ts` or `constants-api-tests.ts`.
+- Do not return `null` or `undefined` from page object methods — throw `Error` with a descriptive message.
+
+## Extending the Repo — Decision Tree
+
+| Scenario                                  | What to create | Where                              |
+| ----------------------------------------- | -------------- | ---------------------------------- |
+| New page/route to test                    | Page object    | `lib/pages/name.page.ts`           |
+| Repeated sub-section shared across routes | Component      | `lib/components/name.component.ts` |
+| New UI constant (URL, credential)         | Add to         | `constants.ts`                     |
+| New API constant (base URL)               | Add to         | `constants-api-tests.ts`           |
+| New API response type                     | Add to         | `lib/types/api.types.ts`           |
+| Shared non-POM helper function            | Add to         | `lib/utils/name.ts`                |
+
+After adding a page or component, export it from the corresponding `index.ts` barrel file.
+
+## Config Mapping
+
+- `playwright.config.ts` → runs `tests/` → includes the `setup` auth project → uses `playwright/.auth/standard-user.json`
+- `playwright.api.config.ts` → runs `tests-api/` → no auth project → uses the `request` fixture directly
+- `testIdAttribute: 'data-test'` is set in `playwright.config.ts` — this is why `getByTestId('foo')` maps to `[data-test=foo]`
+- Never add UI specs to `tests-api/` or vice versa
 
 ## Checks Before Finishing
 
 - Ensure test titles describe user-visible behavior.
 - Prefer `expect(locator).to...` over raw `page` checks.
 - Keep tests independent for `fullyParallel` execution.
-- Add or update API types in `tests-api/types/types.ts` when adding payloads.
+- Add or update API types in `lib/types/api.types.ts` when adding payloads.
+- New pages/components are exported from the corresponding barrel `index.ts`.
 
 ## References
 

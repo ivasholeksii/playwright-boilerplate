@@ -7,6 +7,10 @@ export class InventoryProductComponent {
         this.container = container;
     }
 
+    /**
+     * Returns the product price as a float (e.g. `29.99`).
+     * @throws {Error} if the price element has no text content.
+     */
     async getProductPrice(): Promise<number> {
         const priceText = await this.container
             .getByTestId('inventory-item-price')
