@@ -1,0 +1,4 @@
+interface:
+    display_name: 'Playwright API Test Writing'
+    short_description: 'Create repo-aligned Playwright API request tests'
+    default_prompt: 'Create or update Playwright API tests in this repo, following local type definitions, BASE_URL conventions, and request/response assertion patterns.'

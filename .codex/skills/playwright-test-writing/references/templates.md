@@ -1,4 +1,4 @@
-# Templates
+# UI Templates
 
 > Copy-paste these skeletons and adapt names. All imports and patterns are verified against this repo.
 
@@ -15,7 +15,6 @@ test.describe('feature name', () => {
     });
 
     test('user sees expected content', async ({ inventoryPage }) => {
-        // actions
         await expect(inventoryPage.page).toHaveTitle('Swag Labs');
     });
 });
@@ -27,9 +26,10 @@ test.describe('feature name', () => {
 
 ```ts
 import { test, expect } from '@fixtures';
+import { STANDARD_USER, getUserPass } from '../constants';
 import { getEnvironmentConfig } from '../config/environments';
 
-// Must be at module scope — before test.describe
+// Must be at module scope — before test.describe, never inside it
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const { uiBaseURL } = getEnvironmentConfig();
@@ -43,7 +43,8 @@ test.describe('login', () => {
         await loginPage.enterUsername('wrong@example.com');
         await loginPage.enterPassword('wrongpassword');
         await loginPage.clickLoginButton();
-        expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+        const isDisplayed = await loginPage.isErrorMessageDisplayed();
+        expect(isDisplayed).toBe(true);
     });
 
     test('redirects to inventory after successful login', async ({ loginPage }) => {
@@ -61,6 +62,7 @@ test.describe('login', () => {
 import { test, expect } from '@fixtures';
 import { getEnvironmentConfig } from '../config/environments';
 
+// Must be at module scope — before test.describe
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const { uiBaseURL } = getEnvironmentConfig();
@@ -83,7 +85,8 @@ test.describe('invalid login inputs', () => {
             await loginPage.enterUsername(input);
             await loginPage.enterPassword(input);
             await loginPage.clickLoginButton();
-            expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+            const isDisplayed = await loginPage.isErrorMessageDisplayed();
+            expect(isDisplayed).toBe(true);
         });
     });
 });
@@ -105,44 +108,6 @@ test.describe('product list', () => {
         const backpack = await inventoryPage.getProductByName('Sauce Labs Backpack');
         const price = await backpack.getProductPrice();
         expect(price).toBeGreaterThan(0);
-    });
-});
-```
-
----
-
-## API Spec
-
-```ts
-import { test, expect } from '@playwright/test';
-import { BASE_URL } from '../constants-api-tests';
-import { Post } from '../lib/types';
-
-test.describe('posts endpoint', () => {
-    const url = `${BASE_URL}/posts`;
-
-    test('GET /posts/:id returns the post', async ({ request }) => {
-        const response = await request.get(`${url}/1`);
-        expect(response.status()).toBe(200);
-        const post: Post = await response.json();
-        expect(post.userId).toBeGreaterThan(0);
-        expect(post.id).toBe(1);
-    });
-
-    test('POST /posts creates a new post', async ({ request }) => {
-        const payload: Post = { title: 'test title', body: 'test body', userId: 1 };
-        const response = await request.post(url, { data: payload });
-        expect(response.status()).toBe(201);
-        const created = await response.json();
-        expect(created.id).toBeTruthy();
-    });
-
-    test('GET /posts returns an array', async ({ request }) => {
-        const response = await request.get(url);
-        expect(response.status()).toBe(200);
-        const posts = await response.json();
-        expect(Array.isArray(posts)).toBe(true);
-        expect(posts.length).toBeGreaterThan(0);
     });
 });
 ```
@@ -183,13 +148,13 @@ export class CheckoutPage extends BasePage {
 }
 ```
 
-After creating, export from `lib/pages/index.ts`:
+Export from `lib/pages/index.ts`:
 
 ```ts
 export { CheckoutPage } from './checkout.page';
 ```
 
-Then register in `lib/fixtures.ts` (see fixture extension template below).
+Then register in `lib/fixtures.ts` (see Fixture Extension template below).
 
 ---
 
@@ -201,18 +166,18 @@ Add a new page object to `lib/fixtures.ts` so it is available in all UI specs:
 import { test as base } from '@playwright/test';
 import { LoginPage } from './pages/login.page';
 import { InventoryPage } from './pages/inventory.page';
-import { CheckoutPage } from './pages/checkout.page'; // 1. import
+import { CheckoutPage } from './pages/checkout.page'; // 1. Import
 
 type PageFixtures = {
     loginPage: LoginPage;
     inventoryPage: InventoryPage;
-    checkoutPage: CheckoutPage; // 2. add to type
+    checkoutPage: CheckoutPage; // 2. Add to type
 };
 
 export const test = base.extend<PageFixtures>({
     loginPage: async ({ page }, use) => { await use(new LoginPage(page)); },
     inventoryPage: async ({ page }, use) => { await use(new InventoryPage(page)); },
-    checkoutPage: async ({ page }, use) => { await use(new CheckoutPage(page)); }, // 3. register
+    checkoutPage: async ({ page }, use) => { await use(new CheckoutPage(page)); }, // 3. Register
 });
 
 export { expect } from '@playwright/test';
@@ -254,29 +219,11 @@ export class CartItemComponent {
 }
 ```
 
-After creating, export from `lib/components/index.ts`:
+Export from `lib/components/index.ts`:
 
 ```ts
 export { CartItemComponent } from './cart-item.component';
 ```
-
----
-
-## API Type
-
-Add new types to `lib/types/api.types.ts`:
-
-```ts
-export type Comment = {
-    postId: number;
-    id: number;
-    name: string;
-    email: string;
-    body: string;
-};
-```
-
-The `lib/types/index.ts` barrel already re-exports everything — no additional change needed if it uses `export * from './api.types'`.
 
 ---
 

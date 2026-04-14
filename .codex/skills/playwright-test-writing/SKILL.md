@@ -1,15 +1,15 @@
 ---
 name: playwright-test-writing
-description: Create or update Playwright UI and API tests in this repo. Use when asked to add test coverage, new specs, page objects, API request tests, or to follow local conventions for test directories, auth setup, selectors, and constants.
+description: Create or update Playwright UI end-to-end tests. Use when asked to add UI test coverage, new spec files, page objects, components, or fixtures. Covers selectors, auth state, assertions, and all UI-layer conventions. For API tests use the `playwright-api-test-writing` skill instead.
 ---
 
-# Playwright Test Writing
+# Playwright UI Test Writing
 
 ## Quick Start
 
-1. Identify whether the request is UI (`tests/`), API (`tests-api/`), or both.
-2. Read `references/repo-patterns.md` for the full repo map and real patterns.
-3. Use `references/templates.md` as copy-paste starting points — adapt, don't invent.
+1. Confirm the request is for UI tests (`tests/` directory). For API tests, use the `playwright-api-test-writing` skill instead.
+2. Read `references/repo-patterns.md` for the full repo map and all conventions.
+3. Use `references/templates.md` as copy-paste starting points — adapt names, never invent new patterns.
 
 ---
 
@@ -19,32 +19,28 @@ description: Create or update Playwright UI and API tests in this repo. Use when
 
 1. Create or open `tests/<feature>.spec.ts`.
 2. Import `test` and `expect` from `@fixtures` — **never** from `@playwright/test`.
-3. If the test targets an unauthenticated flow, add `test.use({ storageState: { cookies: [], origins: [] } })` at module scope before `test.describe`.
-4. Get the base URL from `getEnvironmentConfig().uiBaseURL` — not from `constants.ts`.
-5. Reuse existing page objects (`lib/pages/`) and components (`lib/components/`); create new ones only when needed.
-6. Write assertions against locators (`expect(locator).toBeVisible()`) — never against resolved values (`expect(await locator.isVisible())`).
-7. Ensure tests are fully independent — no shared mutable state, no `test.only`.
-
-### Writing an API Test
-
-1. Create or open `tests-api/<resource>.test.ts`.
-2. Import `test` and `expect` from `@playwright/test` (not `@fixtures`).
-3. Import `BASE_URL` from `../constants-api-tests`.
-4. Define request/response types in `lib/types/api.types.ts`; import from `../lib/types`.
-5. Use the `request` fixture directly — no page objects or fixtures needed.
+3. For **unauthenticated** flows (login page, error pages): add `test.use({ storageState: { cookies: [], origins: [] } })` at **module scope**, before `test.describe`.
+4. For unauthenticated tests: import `getEnvironmentConfig` and destructure `uiBaseURL` at module scope — pass it to `navigate(uiBaseURL)`. Authenticated page objects call `navigate()` with no argument.
+5. Reuse existing page objects (`lib/pages/`) and components (`lib/components/`). Create new ones only when there is no suitable existing class.
+6. Write assertions against **locators** — use `await expect(locator).toHaveText(...)` not `expect(await locator.textContent()).toBe(...)`.
+7. Keep tests fully independent — no shared mutable state between tests, no `test.only`.
 
 ### Adding a New Page Object
 
 1. Create `lib/pages/<name>.page.ts` extending `BasePage`.
-2. Export it from `lib/pages/index.ts`.
-3. Add a fixture in `lib/fixtures.ts`: add the type to `PageFixtures` and register the factory in `base.extend`.
-4. The new fixture is then available as a named parameter in any UI spec.
+2. Declare all locators as `private readonly` class properties at the top of the class — **never** create locators inside method bodies.
+3. Provide small, composable `async` methods for user actions.
+4. Methods that return text or sub-elements must `throw new Error('...')` if the element is absent — never return `null` or `undefined`.
+5. If the page has a fixed URL, store it as `private readonly url = '/path.html'` and provide a zero-argument `navigate(): Promise<void>` that calls `super.navigate(this.url)`.
+6. Export from `lib/pages/index.ts`.
+7. Register as a fixture in `lib/fixtures.ts` — add to `PageFixtures` type and `base.extend` call.
 
 ### Adding a New Component
 
-1. Create `lib/components/<name>.component.ts` accepting a `Locator` (not `Page`) in its constructor.
-2. Export it from `lib/components/index.ts`.
-3. Instantiate it inside a page object method that returns the sub-section — never directly in tests.
+1. Create `lib/components/<name>.component.ts`.
+2. Accept a `Locator` (not `Page`) in the constructor — scope all internal queries to that container.
+3. Export from `lib/components/index.ts`.
+4. Instantiate **only** inside a page object method — never directly in a test file.
 
 ---
 
@@ -53,99 +49,106 @@ description: Create or update Playwright UI and API tests in this repo. Use when
 | Rule | Correct | Wrong |
 |------|---------|-------|
 | Selectors | `getByTestId('foo')` | `locator('.class-name')` |
-| UI test imports | `from '@fixtures'` | `from '@playwright/test'` or `from '../lib/fixtures'` |
+| Imports in UI specs | `from '@fixtures'` | `from '@playwright/test'` |
 | Locator assertions | `await expect(locator).toBeVisible()` | `expect(await locator.isVisible()).toBe(true)` |
-| Page-level assertions | `await expect(page).toHaveTitle('...')` | `expect(await page.title()).toBe('...')` |
+| Page URL assertion | `await expect(page).toHaveURL(/path/)` | `expect(await page.url()).toContain('path')` |
+| Page title assertion | `await expect(page).toHaveTitle('Swag Labs')` | `expect(await page.title()).toBe('Swag Labs')` |
 | Auto-wait | `await expect(locator).toHaveText(...)` | `await page.waitForTimeout(1000)` |
-| Base URL | `getEnvironmentConfig().uiBaseURL` | Inline `'https://...'` strings |
-| Locator scope | `private readonly` class property | Ad-hoc locator inside a method body |
-| No-result guard | `throw new Error('...')` | `return null` or `return undefined` |
-| Auth state | `test.use({ storageState: ... })` at module scope | Inside `describe` or `beforeEach` |
-
----
-
-## Anti-Patterns
-
-- **CSS selectors**: `locator('.some-class')` — always use `getByTestId()` or semantic ARIA queries
-- **Resolved-value assertions**: `expect(await locator.textContent()).toBe(...)` — use `expect(locator).toHaveText(...)` for auto-retry
-- **Hard waits**: `page.waitForTimeout()` — Playwright auto-waits; express intent via assertions
-- **Wrong import in UI specs**: `import { test } from '@playwright/test'` — must be `@fixtures`
-- **Wrong import in API specs**: `import { test } from '@fixtures'` — must be `@playwright/test`
-- **Inline constant strings**: base URLs, credentials — add them to `constants.ts` or `constants-api-tests.ts`
-- **`test.only` in committed code**: blocked by `forbidOnly` in CI
-- **Returning `null`/`undefined`**: page object methods must throw `Error` with a descriptive message if an element is missing
-- **Mixing test types**: UI specs in `tests-api/`, API specs in `tests/`
+| Authenticated navigate | `inventoryPage.navigate()` — no URL arg | Inline `page.goto('https://...')` |
+| Unauthenticated navigate | `loginPage.navigate(uiBaseURL)` via `getEnvironmentConfig()` | Inline URL string |
+| Locator definition | `private readonly foo = this.page.getByTestId('foo')` | Locator created inside method body |
+| Missing element | `throw new Error('Descriptive message')` | `return null` or `return undefined` |
+| Auth override scope | `test.use({ storageState: ... })` at **module scope** | Inside `describe` or `beforeEach` |
 
 ---
 
 ## Assertion Guidance
 
-Prefer locator-based assertions — they auto-retry until the condition is met or the timeout expires:
+Always prefer **locator-based assertions** — they auto-retry until the condition is met or timeout expires:
 
 ```ts
-// PREFERRED — auto-retries, clear failure messages
+// CORRECT — auto-retries, descriptive failure message
 await expect(locator).toBeVisible();
 await expect(locator).toHaveText('Expected text');
 await expect(locator).toHaveCount(3);
 await expect(page).toHaveURL(/inventory\.html/);
 await expect(page).toHaveTitle('Swag Labs');
 
-// AVOID — evaluated once, no retry, fragile
-expect(await locator.isVisible()).toBe(true);
-expect(await page.title()).toBe('Swag Labs');
-expect(await locator.textContent()).toBe('Expected text');
+// ACCEPTABLE — when a page object method returns a resolved boolean
+// Use only after actions that produce immediate results
+const isDisplayed = await loginPage.isErrorMessageDisplayed();
+expect(isDisplayed).toBe(true);
+
+// WRONG — misleading, no auto-retry, fragile
+await expect(await page.title()).toBe('Swag Labs');        // await expect() on a non-Promise
+expect(await locator.textContent()).toBe('Expected text'); // no retry
 ```
 
-Use `isVisible()` / `textContent()` only when you need the value for logic (e.g. conditional branching), not for assertions.
+Use `isVisible()` / `textContent()` only when the **value is needed for conditional logic** — never as the primary assertion mechanism.
 
 ---
 
-## Extending the Repo — Decision Tree
+## Anti-Patterns
+
+| Anti-pattern | Why | Fix |
+|---|---|---|
+| `locator('.some-class')` | Fragile CSS coupling | `getByTestId('...')` or `getByRole(...)` |
+| `expect(await locator.textContent()).toBe(...)` | No auto-retry, timing-sensitive | `expect(locator).toHaveText(...)` |
+| `await page.waitForTimeout(1000)` | Arbitrary sleep, slow & brittle | Express intent via auto-waiting assertions |
+| `import { test } from '@playwright/test'` in UI spec | Bypasses page object fixture injection | `import { test } from '@fixtures'` |
+| Inline URL string in test | Breaks when switching environments | `getEnvironmentConfig().uiBaseURL` |
+| `test.only` | Blocked by `forbidOnly: true` on CI | Remove before committing |
+| Page object method returns `null`/`undefined` | Silent failures hide missing elements | `throw new Error('...')` |
+| UI spec in `tests-api/` | Wrong runner, wrong config | Put in `tests/` |
+| Locator created inside a method body | Re-queries on every call, not reusable | Declare as `private readonly` class property |
+| `await expect(await something)` | `expect()` is synchronous — the outer `await` is a no-op and adds confusion | `await expect(locator)` or `expect(await method())` |
+
+---
+
+## Extending the Repo
 
 | Scenario | What to create | Where |
-|----------|---------------|-------|
+|---|---|---|
 | New page/route to test | Page object | `lib/pages/name.page.ts` |
 | Repeated UI sub-section shared across pages | Component | `lib/components/name.component.ts` |
 | New page object accessible as a fixture | Fixture entry | `lib/fixtures.ts` |
-| New UI credential or user constant | Constant | `constants.ts` |
-| New API base URL or endpoint prefix | Constant | `constants-api-tests.ts` |
-| New API response/request type | Type | `lib/types/api.types.ts` |
-| Shared non-POM helper function | Utility | `lib/utils/name.ts` |
+| New user credential or role | Constant | `constants.ts` |
+| Shared helper (not a page object) | Utility | `lib/utils/name.ts` |
 
-After adding a page or component, export from the corresponding barrel `index.ts`.
+After adding a page or component, export it from the corresponding `index.ts` barrel file.
 
 ---
 
-## Config Mapping
+## Config Quick Reference
 
-| Config file | Test directory | Auth | `baseURL` source |
-|---|---|---|---|
-| `playwright.config.ts` | `tests/` | `setup` project → `playwright/.auth/standard-user.json` | `getEnvironmentConfig().uiBaseURL` |
-| `playwright.api.config.ts` | `tests-api/` | none | `getEnvironmentConfig().apiBaseURL` |
-
-- `testIdAttribute: 'data-test'` in UI config → `getByTestId('foo')` resolves `[data-test="foo"]`
-- `fullyParallel: true` → each test gets its own browser context; no shared state across tests
-- `retries: 2` on CI, `0` locally; `forbidOnly: true` on CI
+| Setting | Value | Effect |
+|---|---|---|
+| `testDir` | `./tests` | Only `tests/` files run with UI config |
+| `testIdAttribute` | `data-test` | `getByTestId('foo')` → `[data-test="foo"]` |
+| `fullyParallel` | `true` | Each test gets its own isolated browser context |
+| `forbidOnly` | `true` on CI | `test.only` fails the build |
+| `retries` | `2` on CI, `0` locally | Tests must be deterministic |
+| `storageState` | `playwright/.auth/standard-user.json` | All browser projects load session automatically |
 
 ---
 
-## Checks Before Finishing
+## Checklist Before Finishing
 
 - [ ] Test titles describe user-visible behaviour, not implementation details
 - [ ] All selectors use `getByTestId()` or semantic role/label queries — no CSS classes
-- [ ] Assertions are locator-based (auto-retry) — no `await expect(await ...)`
+- [ ] Assertions are locator-based — no `await expect(await ...)` patterns
 - [ ] No `page.waitForTimeout()` calls
-- [ ] No `test.only` left in code
-- [ ] New page objects extend `BasePage`, use `private readonly` locators, exported from `lib/pages/index.ts`
-- [ ] New page objects registered as fixtures in `lib/fixtures.ts`
-- [ ] New components accept `Locator`, not `Page`, exported from `lib/components/index.ts`
-- [ ] New API types added to `lib/types/api.types.ts`
-- [ ] No inline constant strings — use `constants.ts` or `constants-api-tests.ts`
+- [ ] No `test.only` committed
+- [ ] `test` and `expect` imported from `@fixtures`, not `@playwright/test`
+- [ ] Unauthenticated tests have `test.use({ storageState: { cookies: [], origins: [] } })` at module scope
+- [ ] New page objects: extend `BasePage`, `private readonly` locators, exported from `lib/pages/index.ts`, registered in `lib/fixtures.ts`
+- [ ] New components: accept `Locator` constructor, exported from `lib/components/index.ts`
+- [ ] No inline constant strings — credentials and user names in `constants.ts`
 - [ ] Tests are independent and safe to run under `fullyParallel: true`
 
 ---
 
 ## References
 
-- `references/repo-patterns.md` — repo map, auth, locator conventions, fixture extension, data-driven patterns
-- `references/templates.md` — copy-paste skeletons for every file type
+- `references/repo-patterns.md` — repo map, auth, selectors, fixture extension, data-driven patterns
+- `references/templates.md` — copy-paste skeletons for every UI file type
