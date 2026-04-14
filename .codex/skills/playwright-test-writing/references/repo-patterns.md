@@ -1,79 +1,99 @@
-# Repo Patterns
+# UI Repo Patterns
 
 ## Repo Map
 
 | Path | Purpose |
 |------|---------|
-| `tests/*.spec.ts` | UI e2e tests |
-| `tests-api/*.test.ts` | API tests |
-| `tests-examples/` | Playwright reference only — do not modify or add tests here |
+| `tests/*.spec.ts` | UI end-to-end test files |
+| `tests-examples/` | Playwright reference examples — do not modify |
 | `lib/pages/*.page.ts` | Page objects (re-exported from `lib/pages/index.ts`) |
 | `lib/components/*.component.ts` | UI sub-section components (re-exported from `lib/components/index.ts`) |
 | `lib/index.ts` | Re-exports all pages and components |
-| `lib/fixtures.ts` | Extended `test` fixture — **always** import `test`/`expect` from `@fixtures` in UI specs |
-| `lib/types/api.types.ts` | Shared API request/response types (re-exported from `lib/types/index.ts`) |
+| `lib/fixtures.ts` | Extended `test` — **always** import `test`/`expect` from `@fixtures` in UI specs |
 | `lib/utils/*.ts` | Shared non-POM helper functions |
-| `constants.ts` | UI user constants: `STANDARD_USER`, `LOCKED_OUT_USER`, `PROBLEM_USER`, `PERFORMANCE_GLITCH_USER`, `getUserPass()` |
-| `constants-api-tests.ts` | API `BASE_URL` |
+| `constants.ts` | User constants: `STANDARD_USER`, `LOCKED_OUT_USER`, `PROBLEM_USER`, `PERFORMANCE_GLITCH_USER`, `getUserPass()` |
 | `config/environments.ts` | `getEnvironmentConfig()` → `{ uiBaseURL, apiBaseURL }` per environment |
-| `tests/auth.setup.ts` | Logs in and saves session to `playwright/.auth/standard-user.json` |
-| `playwright.config.ts` | UI runner config (`testDir: './tests'`, `testIdAttribute: 'data-test'`) |
-| `playwright.api.config.ts` | API runner config (`testDir: './tests-api'`) |
+| `tests/auth.setup.ts` | Authenticates as `STANDARD_USER` and saves session to `playwright/.auth/standard-user.json` |
+| `playwright.config.ts` | UI runner config (`testDir: './tests'`, `testIdAttribute: 'data-test'`, `baseURL: uiBaseURL`) |
 
 ---
 
-## Getting the Base URL
+## Base URL
 
-Never hard-code URLs in test files. Use the environment config:
+Never hard-code URLs in test files.
+
+**Unauthenticated tests** must call `navigate(uiBaseURL)` — import `getEnvironmentConfig`:
 
 ```ts
-// UI tests — uiBaseURL resolves to 'https://www.saucedemo.com' by default
 import { getEnvironmentConfig } from '../config/environments';
-const { uiBaseURL } = getEnvironmentConfig();
 
-// API tests — BASE_URL is 'https://jsonplaceholder.typicode.com'
-import { BASE_URL } from '../constants-api-tests';
+const { uiBaseURL } = getEnvironmentConfig();
+// uiBaseURL = 'https://www.saucedemo.com' (staging default)
+```
+
+**Authenticated page objects** store their own relative path and resolve it against `baseURL` from the config — the test passes no URL:
+
+```ts
+// Inside InventoryPage:
+private readonly url = '/inventory.html';
+async navigate(): Promise<void> {
+    await super.navigate(this.url); // page.goto('/inventory.html') resolved against baseURL
+}
+
+// In a test:
+await inventoryPage.navigate(); // no URL argument
 ```
 
 ---
 
-## Selector and Locator Conventions
+## Selector Priority
 
-- `testIdAttribute` is set to `data-test` in `playwright.config.ts`
-- `getByTestId('foo')` resolves the selector `[data-test="foo"]`
-- Priority order: `getByTestId` → `getByRole` / `getByLabel` → `getByText`
-- **Never** use CSS class selectors — they are fragile and violate this project's conventions
+1. `getByTestId('data-test-value')` — primary selector, maps to `[data-test="..."]`
+2. `getByRole('button', { name: 'Submit' })` — semantic ARIA selector
+3. `getByLabel('Email address')` — form label selector
+4. `getByText('exact text')` — last resort, only for unique static text
+
+**Never** use CSS class selectors (`locator('.class-name')`) — they couple tests to implementation details and break on style refactors.
 
 ---
 
 ## Auth and Storage State
 
 - `tests/auth.setup.ts` authenticates as `STANDARD_USER` and saves session to `playwright/.auth/standard-user.json`
-- All UI browser projects in `playwright.config.ts` declare `dependencies: ['setup']` and load that storage state automatically
-- For **unauthenticated** flows (login page, error pages): clear session at module scope — **before** `test.describe`:
+- All browser projects (`chromium`, `firefox`, `webkit`) declare `dependencies: ['setup']` and load that storage state automatically
+- All tests in `tests/` are **authenticated by default**
+- For **unauthenticated** flows, clear the session at **module scope** — before `test.describe`, never inside it:
 
 ```ts
-// Must be at module scope, not inside describe or beforeEach
+// CORRECT — module scope
 test.use({ storageState: { cookies: [], origins: [] } });
+
+const { uiBaseURL } = getEnvironmentConfig(); // needed to pass to navigate()
+
+test.describe('login', () => { ... });
+
+// WRONG — inside describe
+test.describe('login', () => {
+    test.use({ storageState: { cookies: [], origins: [] } }); // too late
+});
 ```
 
 ---
 
-## UI Page Object Pattern
+## Page Object Pattern
 
 - Extend `BasePage` from `lib/pages/base.page.ts`
-- `BasePage.page` is `public` — accessible in tests as `somePage.page`
-- Declare all locators as `private readonly` class properties — never create them inside methods
+- `BasePage.page` is `public` — accessible in tests as `somePage.page` when no page object method covers the needed assertion
+- Declare all locators as `private readonly` class properties — never create them inside method bodies
 - Provide small, composable `async` methods for user actions
-- Override `navigate()` to call `super.navigate(this.url)` with an internal `private readonly url`
-- Methods that return text or sub-elements **must throw `Error`** if the element is absent or empty — never return `null` or `undefined`
+- Methods that return text or sub-elements **must throw `Error`** if the element is absent — never return `null` or `undefined`
 
 ```ts
-// CORRECT — locator is a stable class property
+// CORRECT — stable class property, reusable across method calls
 private readonly addButton = this.page.getByTestId('add-to-cart');
 async addToCart(): Promise<void> { await this.addButton.click(); }
 
-// WRONG — locator is created ad-hoc inside the method
+// WRONG — locator constructed fresh inside every call
 async addToCart(): Promise<void> { await this.page.getByTestId('add-to-cart').click(); }
 ```
 
@@ -82,11 +102,11 @@ async addToCart(): Promise<void> { await this.page.getByTestId('add-to-cart').cl
 ## Component Pattern
 
 - Accept a `Locator` (not `Page`) in the constructor — all internal queries are scoped to that container
-- Components are instantiated only by page object methods that return sub-sections (e.g. `InventoryPage.getProductByName()`)
+- Components are instantiated **only** inside page object methods that return sub-sections
 - Never instantiate components directly in test files
 
 ```ts
-// Page object method returns a component
+// Page object method returns a component scoped to a single product card
 async getProductByName(name: string): Promise<InventoryProductComponent> {
     const product = this.product.filter({ hasText: name });
     if (!product) throw new Error(`Product "${name}" not found`);
@@ -98,39 +118,30 @@ async getProductByName(name: string): Promise<InventoryProductComponent> {
 
 ## Fixture Extension Pattern
 
-When adding a new page object, register it as a fixture in `lib/fixtures.ts` so tests can use it by name:
+When adding a new page object, register it in `lib/fixtures.ts`:
 
 ```ts
 import { test as base } from '@playwright/test';
 import { LoginPage } from './pages/login.page';
 import { InventoryPage } from './pages/inventory.page';
-import { CheckoutPage } from './pages/checkout.page'; // 1. Import the new page
+import { CheckoutPage } from './pages/checkout.page'; // 1. Import
 
 type PageFixtures = {
     loginPage: LoginPage;
     inventoryPage: InventoryPage;
-    checkoutPage: CheckoutPage; // 2. Add to the type
+    checkoutPage: CheckoutPage; // 2. Add to type
 };
 
 export const test = base.extend<PageFixtures>({
     loginPage: async ({ page }, use) => { await use(new LoginPage(page)); },
     inventoryPage: async ({ page }, use) => { await use(new InventoryPage(page)); },
-    checkoutPage: async ({ page }, use) => { await use(new CheckoutPage(page)); }, // 3. Register factory
+    checkoutPage: async ({ page }, use) => { await use(new CheckoutPage(page)); }, // 3. Register
 });
 
 export { expect } from '@playwright/test';
 ```
 
-The fixture is now available in any UI spec: `async ({ checkoutPage }) => { ... }`.
-
----
-
-## API Test Pattern
-
-- Import `test`/`expect` from `@playwright/test` — not `@fixtures`
-- Import `BASE_URL` from `../constants-api-tests`
-- Use the `request` fixture directly — no page objects or custom fixtures
-- Define shared response/request shapes in `lib/types/api.types.ts` and import from `../lib/types`
+The fixture is then available in any UI spec: `async ({ checkoutPage }) => { ... }`.
 
 ---
 
@@ -143,6 +154,7 @@ const invalidInputs = [
     '',
     ' ',
     '<script>alert("XSS")</script>',
+    '"><script>alert("XSS")</script>',
     'SELECT * FROM users WHERE ""=""',
 ];
 
@@ -156,7 +168,8 @@ test.describe('invalid login inputs', () => {
             await loginPage.enterUsername(input);
             await loginPage.enterPassword(input);
             await loginPage.clickLoginButton();
-            expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+            const isDisplayed = await loginPage.isErrorMessageDisplayed();
+            expect(isDisplayed).toBe(true);
         });
     });
 });
@@ -164,23 +177,14 @@ test.describe('invalid login inputs', () => {
 
 ---
 
-## Error Handling Contract
-
-- Page object and component methods that return text or components **must throw `Error`** when the element is absent or has no text
-- Never return `null` or `undefined` from these methods
-- Pattern: `if (!text) throw new Error('Descriptive message about what was missing');`
-
----
-
 ## Accessing Raw Page in Tests
 
-- `BasePage.page` is `public` — accessible from tests via `somePage.page`
-- Prefer POM methods first; use `somePage.page` only for assertions the POM doesn't cover
+`BasePage.page` is `public` — use it for assertions that page object methods don't cover:
 
 ```ts
-// POM method doesn't expose a URL check — fall back to raw page
-await expect(loginPage.page).toHaveURL(/inventory\.html/);
-await expect(loginPage.page).toHaveTitle('Swag Labs');
+// Page object doesn't expose URL/title checks — fall back to raw page
+await expect(inventoryPage.page).toHaveURL(/inventory\.html/);
+await expect(inventoryPage.page).toHaveTitle('Swag Labs');
 ```
 
 ---
@@ -188,6 +192,6 @@ await expect(loginPage.page).toHaveTitle('Swag Labs');
 ## Concurrency and Stability
 
 - `fullyParallel: true` — each test runs in its own isolated browser context
-- Never share mutable state between tests (no module-level arrays that tests mutate, etc.)
-- `forbidOnly: !!process.env.CI` — `test.only` will fail CI builds; never commit it
+- Never share mutable state between tests (no module-level arrays mutated across tests)
+- `forbidOnly: !!process.env.CI` — `test.only` fails CI builds; never commit it
 - `retries: 2` on CI, `0` locally — tests must be deterministic, not retry-dependent
