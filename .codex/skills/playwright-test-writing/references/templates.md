@@ -1,120 +1,231 @@
 # Templates
 
-## UI Spec Skeleton (Fixtures-based — preferred)
+> Copy-paste these skeletons and adapt names. All imports and patterns are verified against this repo.
+
+---
+
+## UI Spec — Authenticated
 
 ```ts
-import { test, expect } from '../lib/fixtures';
+import { test, expect } from '@fixtures';
 
 test.describe('feature name', () => {
     test.beforeEach(async ({ inventoryPage }) => {
         await inventoryPage.navigate();
     });
 
-    test('should do something', async ({ inventoryPage }) => {
+    test('user sees expected content', async ({ inventoryPage }) => {
         // actions
-        // assertions
         await expect(inventoryPage.page).toHaveTitle('Swag Labs');
     });
 });
 ```
 
-## UI Spec Skeleton (Unauthenticated)
+---
+
+## UI Spec — Unauthenticated
 
 ```ts
-import { test, expect } from '../lib/fixtures';
-import { BASE_URL } from '../constants';
+import { test, expect } from '@fixtures';
+import { getEnvironmentConfig } from '../config/environments';
 
+// Must be at module scope — before test.describe
 test.use({ storageState: { cookies: [], origins: [] } });
+
+const { uiBaseURL } = getEnvironmentConfig();
 
 test.describe('login', () => {
     test.beforeEach(async ({ loginPage }) => {
-        await loginPage.navigate(BASE_URL);
+        await loginPage.navigate(uiBaseURL);
     });
 
     test('shows error for invalid credentials', async ({ loginPage }) => {
         await loginPage.enterUsername('wrong@example.com');
         await loginPage.enterPassword('wrongpassword');
         await loginPage.clickLoginButton();
-        await expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+        expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+    });
+
+    test('redirects to inventory after successful login', async ({ loginPage }) => {
+        await loginPage.login(STANDARD_USER, getUserPass());
+        await expect(loginPage.page).toHaveURL(/inventory\.html/);
     });
 });
 ```
 
-## Component Usage in a Test
+---
+
+## UI Spec — Data-Driven
 
 ```ts
-import { test, expect } from '../lib/fixtures';
+import { test, expect } from '@fixtures';
+import { getEnvironmentConfig } from '../config/environments';
+
+test.use({ storageState: { cookies: [], origins: [] } });
+
+const { uiBaseURL } = getEnvironmentConfig();
+
+const invalidInputs = [
+    '',
+    ' ',
+    '<script>alert("XSS")</script>',
+    '"><script>alert("XSS")</script>',
+    'SELECT * FROM users WHERE ""=""',
+];
+
+test.describe('invalid login inputs', () => {
+    test.beforeEach(async ({ loginPage }) => {
+        await loginPage.navigate(uiBaseURL);
+    });
+
+    invalidInputs.forEach((input) => {
+        test(`rejects input: "${input}"`, async ({ loginPage }) => {
+            await loginPage.enterUsername(input);
+            await loginPage.enterPassword(input);
+            await loginPage.clickLoginButton();
+            expect(await loginPage.isErrorMessageDisplayed()).toBe(true);
+        });
+    });
+});
+```
+
+---
+
+## UI Spec — Component Usage
+
+```ts
+import { test, expect } from '@fixtures';
 
 test.describe('product list', () => {
     test.beforeEach(async ({ inventoryPage }) => {
         await inventoryPage.navigate();
     });
 
-    test('backpack price is a positive number', async ({ inventoryPage }) => {
-        const backpack = await inventoryPage.getProductByName(
-            'Sauce Labs Backpack'
-        );
+    test('backpack has a positive price', async ({ inventoryPage }) => {
+        const backpack = await inventoryPage.getProductByName('Sauce Labs Backpack');
         const price = await backpack.getProductPrice();
         expect(price).toBeGreaterThan(0);
     });
 });
 ```
 
-## API Spec Skeleton
+---
+
+## API Spec
 
 ```ts
 import { test, expect } from '@playwright/test';
 import { BASE_URL } from '../constants-api-tests';
+import { Post } from '../lib/types';
 
-test.describe('resource endpoint tests', () => {
-    const url = `${BASE_URL}/resource`;
+test.describe('posts endpoint', () => {
+    const url = `${BASE_URL}/posts`;
 
-    test('GET /resource/1 should return data', async ({ request }) => {
+    test('GET /posts/:id returns the post', async ({ request }) => {
         const response = await request.get(`${url}/1`);
         expect(response.status()).toBe(200);
-        const body = await response.json();
-        expect(body).toBeTruthy();
+        const post: Post = await response.json();
+        expect(post.userId).toBeGreaterThan(0);
+        expect(post.id).toBe(1);
+    });
+
+    test('POST /posts creates a new post', async ({ request }) => {
+        const payload: Post = { title: 'test title', body: 'test body', userId: 1 };
+        const response = await request.post(url, { data: payload });
+        expect(response.status()).toBe(201);
+        const created = await response.json();
+        expect(created.id).toBeTruthy();
+    });
+
+    test('GET /posts returns an array', async ({ request }) => {
+        const response = await request.get(url);
+        expect(response.status()).toBe(200);
+        const posts = await response.json();
+        expect(Array.isArray(posts)).toBe(true);
+        expect(posts.length).toBeGreaterThan(0);
     });
 });
 ```
 
-## Page Object Skeleton
+---
+
+## Page Object
 
 ```ts
 import { Page } from '@playwright/test';
 import { BasePage } from './base.page';
 
-export class SomePage extends BasePage {
-    private readonly url = '/some-path';
-    private readonly actionButton = this.page.getByTestId('action-button');
+export class CheckoutPage extends BasePage {
+    private readonly url = '/checkout-step-one.html';
+    private readonly firstNameInput = this.page.getByTestId('firstName');
+    private readonly lastNameInput = this.page.getByTestId('lastName');
+    private readonly postalCodeInput = this.page.getByTestId('postalCode');
+    private readonly continueButton = this.page.getByTestId('continue');
 
     constructor(page: Page) {
         super(page);
     }
 
-    /** Navigates to `/some-path`. Requires authenticated storage state. */
+    /** Navigates to the checkout information page. Requires authenticated storage state. */
     async navigate(): Promise<void> {
         await super.navigate(this.url);
     }
 
-    async clickActionButton(): Promise<void> {
-        await this.actionButton.click();
+    async fillShippingInfo(firstName: string, lastName: string, zip: string): Promise<void> {
+        await this.firstNameInput.fill(firstName);
+        await this.lastNameInput.fill(lastName);
+        await this.postalCodeInput.fill(zip);
+    }
+
+    async clickContinue(): Promise<void> {
+        await this.continueButton.click();
     }
 }
 ```
 
-After creating a page object, add it to `lib/pages/index.ts`:
+After creating, export from `lib/pages/index.ts`:
 
 ```ts
-export { SomePage } from './some.page';
+export { CheckoutPage } from './checkout.page';
 ```
 
-## Component Skeleton
+Then register in `lib/fixtures.ts` (see fixture extension template below).
+
+---
+
+## Fixture Extension
+
+Add a new page object to `lib/fixtures.ts` so it is available in all UI specs:
+
+```ts
+import { test as base } from '@playwright/test';
+import { LoginPage } from './pages/login.page';
+import { InventoryPage } from './pages/inventory.page';
+import { CheckoutPage } from './pages/checkout.page'; // 1. import
+
+type PageFixtures = {
+    loginPage: LoginPage;
+    inventoryPage: InventoryPage;
+    checkoutPage: CheckoutPage; // 2. add to type
+};
+
+export const test = base.extend<PageFixtures>({
+    loginPage: async ({ page }, use) => { await use(new LoginPage(page)); },
+    inventoryPage: async ({ page }, use) => { await use(new InventoryPage(page)); },
+    checkoutPage: async ({ page }, use) => { await use(new CheckoutPage(page)); }, // 3. register
+});
+
+export { expect } from '@playwright/test';
+```
+
+---
+
+## Component
 
 ```ts
 import { Locator } from '@playwright/test';
 
-export class SomeComponent {
+export class CartItemComponent {
     private readonly container: Locator;
 
     constructor(container: Locator) {
@@ -122,43 +233,90 @@ export class SomeComponent {
     }
 
     /**
-     * Returns the label text.
-     * @throws {Error} if the label element has no text content.
+     * Returns the item name text.
+     * @throws {Error} if the element has no text content.
      */
-    async getLabelText(): Promise<string> {
-        const text = await this.container.getByTestId('label').textContent();
-        if (!text) throw new Error('Label text not found');
-        return text;
+    async getName(): Promise<string> {
+        const text = await this.container.getByTestId('inventory-item-name').textContent();
+        if (!text) throw new Error('Cart item name not found');
+        return text.trim();
+    }
+
+    /**
+     * Returns the item price as a float (e.g. 29.99).
+     * @throws {Error} if the element has no text content.
+     */
+    async getPrice(): Promise<number> {
+        const text = await this.container.getByTestId('inventory-item-price').textContent();
+        if (!text) throw new Error('Cart item price not found');
+        return parseFloat(text.replace('$', ''));
     }
 }
 ```
 
-After creating a component, add it to `lib/components/index.ts`:
+After creating, export from `lib/components/index.ts`:
 
 ```ts
-export { SomeComponent } from './some.component';
+export { CartItemComponent } from './cart-item.component';
 ```
 
-## Auth Setup Skeleton (for adding a new user role)
+---
+
+## API Type
+
+Add new types to `lib/types/api.types.ts`:
 
 ```ts
-import { test as setup } from '@playwright/test';
-import { BASE_URL, SOME_USER, getUserPass } from '../constants';
+export type Comment = {
+    postId: number;
+    id: number;
+    name: string;
+    email: string;
+    body: string;
+};
+```
+
+The `lib/types/index.ts` barrel already re-exports everything — no additional change needed if it uses `export * from './api.types'`.
+
+---
+
+## Auth Setup — New User Role
+
+```ts
+import { test as setup, expect } from '@playwright/test';
+import path from 'path';
+import { SOME_USER, getUserPass } from '../constants';
+import { getEnvironmentConfig } from '../config/environments';
 import { LoginPage } from '../lib/pages/login.page';
 import { InventoryPage } from '../lib/pages/inventory.page';
 
-const authFile = 'playwright/.auth/some-user.json';
+const authFile = path.join(__dirname, '../playwright/.auth/some-user.json');
 
 setup('authenticate as some user', async ({ page }) => {
+    require('dotenv').config();
+    const { uiBaseURL } = getEnvironmentConfig();
+
     const loginPage = new LoginPage(page);
-    await loginPage.navigate(BASE_URL);
+    await loginPage.navigate(uiBaseURL);
     await loginPage.login(SOME_USER, getUserPass());
 
-    const inventoryPage = new InventoryPage(page);
-    await inventoryPage.navigate();
+    const inventoryPage = new InventoryPage(loginPage.page);
+    await expect(inventoryPage.page).toHaveTitle('Swag Labs');
 
     await page.context().storageState({ path: authFile });
 });
 ```
 
-Then add a new project entry in `playwright.config.ts` that depends on this setup and passes `storageState: authFile`.
+Then in `playwright.config.ts`, add a setup project and a browser project that depends on it:
+
+```ts
+{ name: 'some-user-setup', testMatch: /some-user\.setup\.ts/ },
+{
+    name: 'some-user-chromium',
+    use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/some-user.json',
+    },
+    dependencies: ['some-user-setup'],
+},
+```
